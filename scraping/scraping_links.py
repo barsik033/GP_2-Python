@@ -102,70 +102,66 @@ def save_csv(paths, fname, reason=""):
         logger.error('Ошибка сохранения %s: %s', fname, e)
 
 
-def main():
-    start_ts = time.time()
-    driver = init_driver(headless=False)
-    wait = WebDriverWait(driver, 20)
 
-    all_links = set()
-    if os.path.exists(out_all):
-        try:
-            df0 = pd.read_csv(out_all)
-            for u in df0['url']:
-                all_links.add(u)
-            logger.info('🔁 Подгружено %d ссылок из %s', len(all_links), out_all)
-        except Exception as e:
-            logger.warning('Не удалось прочитать %s: %s', out_all, e)
+start_ts = time.time()
+driver = init_driver(headless=False)
+wait = WebDriverWait(driver, 20)
 
+all_links = set()
+if os.path.exists(out_all):
     try:
-        for idx, base_url in enumerate(start_urls, start=1):
-            logger.info('=== Район %d/%d ===', idx, len(start_urls))
-            district_links = set()
-
-            for p in range(pages_begin, pages_end + 1):
-                page_url = set_query_param(base_url, 'p', p)
-                logger.info('[р-%d стр-%d] %s', idx, p, page_url)
-
-                driver.get(page_url)
-                close_banners(driver)
-
-                try:
-                    wait.until(EC.any_of(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, 'article[data-name="CardComponent"]')),
-                        EC.presence_of_element_located((By.CSS_SELECTOR, 'a[href*="/sale/flat/"]'))
-                    ))
-                except Exception:
-                    logger.warning('Карточки не появились по ожиданию — продолжаю')
-
-                soft_scroll(driver, steps=10, pause=0.35)
-                links = parse_links_from_source(driver.page_source)
-
-                before_d = len(district_links)
-                before_all = len(all_links)
-                for u in links:
-                    district_links.add(u)
-                    all_links.add(u)
-
-                logger.info('  +%d (район %d итого: %d) | +%d (всего: %d)',
-                            len(district_links) - before_d, idx, len(district_links),
-                            len(all_links) - before_all, len(all_links))
-
-                time.sleep(0.7 + random.random()*0.6)
-
-            fname = f'links_district_{idx}.csv'
-            save_csv(district_links, fname, reason='по завершении района')
-            save_csv(all_links, out_all, reason='обновлён общий')
-
-        logger.info('✅ Готово. Всего уникальных ссылок: %d', len(all_links))
-
+        df0 = pd.read_csv(out_all)
+        for u in df0['url']:
+            all_links.add(u)
+        logger.info('🔁 Подгружено %d ссылок из %s', len(all_links), out_all)
     except Exception as e:
-        logger.exception('💥 Сбой в работе: %s', e)
-        save_csv(all_links, out_all, reason='автосейв при ошибке')
-    finally:
-        driver.quit()
-        logger.info('⏱️ Время: %.1f мин.', (time.time() - start_ts)/60)
+        logger.warning('Не удалось прочитать %s: %s', out_all, e)
 
+try:
+    for idx, base_url in enumerate(start_urls, start=1):
+        logger.info('=== Район %d/%d ===', idx, len(start_urls))
+        district_links = set()
 
-if __name__ == '__main__':
-    main()
+        for p in range(pages_begin, pages_end + 1):
+            page_url = set_query_param(base_url, 'p', p)
+            logger.info('[р-%d стр-%d] %s', idx, p, page_url)
+
+            driver.get(page_url)
+            close_banners(driver)
+
+            try:
+                wait.until(EC.any_of(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'article[data-name="CardComponent"]')),
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'a[href*="/sale/flat/"]'))
+                ))
+            except Exception:
+                logger.warning('Карточки не появились по ожиданию — продолжаю')
+
+            soft_scroll(driver, steps=10, pause=0.35)
+            links = parse_links_from_source(driver.page_source)
+
+            before_d = len(district_links)
+            before_all = len(all_links)
+            for u in links:
+                district_links.add(u)
+                all_links.add(u)
+
+            logger.info('  +%d (район %d итого: %d) | +%d (всего: %d)',
+                        len(district_links) - before_d, idx, len(district_links),
+                        len(all_links) - before_all, len(all_links))
+
+            time.sleep(0.7 + random.random()*0.6)
+
+        fname = f'links_district_{idx}.csv'
+        save_csv(district_links, fname, reason='по завершении района')
+        save_csv(all_links, out_all, reason='обновлён общий')
+
+    logger.info('✅ Готово. Всего уникальных ссылок: %d', len(all_links))
+
+except Exception as e:
+    logger.exception('💥 Сбой в работе: %s', e)
+    save_csv(all_links, out_all, reason='автосейв при ошибке')
+finally:
+    driver.quit()
+    logger.info('⏱️ Время: %.1f мин.', (time.time() - start_ts)/60)
 
