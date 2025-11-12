@@ -34,8 +34,6 @@ __snapshots__/
 logs/
 log.txt
 *.err
-.ipynb_checkpoints/
-*.ipynb
 .coverage
 htmlcov/
 .cache/
