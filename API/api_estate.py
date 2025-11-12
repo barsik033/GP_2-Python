@@ -96,7 +96,7 @@ try:
              'lat', 'lng', 'name', 'source', 'created', 'region', 'city', 'type',
              'section', 'category', 'metro', 'material', 'rooms', 'sqLiving']]
     df.to_excel('final.xlsx', index=False)
-    logger.info(f'Сохранено {len(df)} объявлений → final.xlsx')
+    logger.info(f'Сохранено {len(df)} объявлений: final.xlsx')
 
 except Exception as e:
     logger.error(f'Ошибка: {e}')
